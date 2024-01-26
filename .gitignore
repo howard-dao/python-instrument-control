@@ -1,0 +1,3 @@
+# ignore .ipynb files
+*.ipynb
+*.pyc
