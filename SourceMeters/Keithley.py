@@ -7,21 +7,26 @@ import pyvisa as visa
 import numpy as np
 
 class Keithley2420(visa.resources.GPIBInstrument):
-    def __init__(self, visa=None):
+    def __init__(self, visa):
         self.idn = visa.query('*IDN?')
         self.idn = self.idn.split(',')
         if self.idn[0] != 'KEITHLEY INSTRUMENTS INC.' and self.idn[1] != 'MODEL 2420':
             print('Device not recognized as Keithley 2420.')
         self.visa = visa
 
+        self.min_volt = -63
+        self.max_volt = 63
+
+        self.min_curr = -3.15
+        self.max_curr = 3.15
+
     def get_source_mode(self):
         """
         Returns a string that represents the sourcemeter's output type, either voltage or current.
 
         Returns:
-            mode
-                type: string
-                desc: 'volt' or 'curr'
+            mode : str
+                Either 'volt' or 'curr'.
         """
         mode = self.visa.query_ascii_values(':source:func:mode?', converter='s')[0]
         mode = mode.rstrip('\n')
@@ -32,96 +37,100 @@ class Keithley2420(visa.resources.GPIBInstrument):
         Sets the sourcemeter to output either voltage or current.
 
         Parameters:
-            mode
-                type: string
-                desc: either 'volt' or 'curr'
+            mode : str
+                Either 'volt' or 'curr'.
 
         Raises:
-            AttributeError: <mode> is neither 'volt' nor 'curr'
+            ValueError: <mode> is neither 'volt' nor 'curr'.
         """
         settings = ['volt', 'curr']
         if mode.lower() in settings:
-            self.visa.write(':source:func:mode ', mode)
+            # self.visa.write(':source:func:mode ', mode)
+            self.visa.write(f':source:func:mode {mode}')
         else:
-            raise AttributeError('Input parameter <mode> must be either "volt" or "curr".')
+            raise ValueError('Input parameter <mode> must be either "volt" or "curr".')
         
     def set_volt(self, volt:float):
         """
         Sets the sourcemeter output voltage in Volts.
 
         Parameters:
-            volt
-                type: float
-                desc: output voltage between -63 and 63 V
+            volt : float
+                Output voltage between -63 and 63 V.
 
         Raises:
-            AttributeError: <volt> is outside the acceptable range
+            ValueError: <volt> is out of range.
         """
-        if volt >= -63 and volt <= 63:
-            self.visa.write(':source:volt ', str(volt))
+        if volt >= self.min_volt and volt <= self.max_volt:
+            # self.visa.write(':source:volt ', str(volt))
+            self.visa.write(f':source:volt {volt}')
         else:
-            raise AttributeError('Input parameter <volt> must be between -63 and 63 (V).')
+            raise ValueError(f'Input parameter <volt> must be between 
+                             {self.min_volt} and {self.max_volt}.')
         
     def set_curr(self, curr:float):
         """
         Sets the sourcemeter output current in Amperes.
 
         Parameters:
-            curr
-                type: float
-                desc: output current between -3.15 and 3.15 A
+            curr : float
+                Output current between -3.15 and 3.15 A.
 
         Raises:
-            AttributeError: <curr> is outside the acceptable range
+            ValueError: <curr> is out of range.
         """
-        if curr >= -3.15 and curr <= 3.15:
-            self.visa.write(':source:volt ', str(curr))
+        if curr >= self.min_curr and curr <= self.max_curr:
+            # self.visa.write(':source:volt ', str(curr))
+            self.visa.write(f':source:curr {curr}')
         else:
-            raise AttributeError('Input parameter <curr> must be between -3.15 and 3.15 (A).')
+            raise ValueError(f'Input parameter <curr> must be between 
+                             {self.min_curr} and {self.max_curr}.')
     
     def get_clamp_limit(self):
         """
-        Returns the compliance limit over which the output current/voltage cannot exceed.
-        Limit will be a current limit if outputting voltage, or voltage limit if outputting current.
+        Returns the compliance limit over which the output current/voltage cannot exceed. Limit will be a current limit if outputting voltage, or voltage limit if outputting current.
         
         Returns:
-            limit
-                type: float
-                desc: compliance limit
+            limit : float
+                Compliance limit. If the sourcemeter is set to outputting voltage, this will be a current limit. If set to outputting current, it will be a voltage limit.
         """
         mode = self.get_source_mode()
         if mode == 'VOLT':
             meas_type = 'curr'
         else:
             meas_type = 'volt'
-        limit = self.visa.query_ascii_values(':' + meas_type + ':prot:level?')[0]
+        # limit = self.visa.query_ascii_values(':' + meas_type + ':prot:level?')[0]
+        limit = self.visa.query_ascii_values(f':{meas_type}:prot:level?')[0]
         return limit
     
-    def set_clamp_limit(self, limit):
+    def set_clamp_limit(self, limit:float):
         """
-        Sets the output current limit if outputting voltage, or output voltage limit if outputting current.
-        Input parameter <limit> may be set to be within the following ranges depending on measure type.
+        Sets the output current limit if outputting voltage, or output voltage limit if outputting current. Input parameter <limit> may be set to be within the following ranges depending on measure type.
 
         Voltage range: -63 V to 63 V
         Current range: -3.15 A to 3.15 A
 
         Parameters:
-            limit: float
-            desc: sourcemeter compliance limit
+            limit : float
+                Compliance limit. If the sourcemeter is set to outputting voltage, this will be a
+                current limit. If set to outputting current, it will be a voltage limit.
+
+        Raises:
+            ValueError: <limit> is out of range.
         """
         mode = self.get_source_mode()
-        match mode:
-            case 'VOLT':
-                meas_type = 'curr'
-                if limit < -3.15 and limit > 3.15:
-                    raise AttributeError('Outputting voltage, current compliance must be between -3.15 and 3.15 A')
-            case 'CURR':
-                meas_type = 'volt'
-                if limit < -63 and limit > 63:
-                    raise AttributeError('Outputting current, voltage compliance must be between -63 and 63 V.')
-            case _:
-                raise AttributeError('Input parameter <mode> was not found to be either "curr" or "volt"')
-        self.visa.write(':' + meas_type + ':prot ', str(limit))
+        if mode == 'VOLT':
+            meas_type = 'curr'
+            if limit < self.min_curr and limit > self.max_curr:
+                raise ValueError(f'Outputting voltage, current compliance must
+                                 be between {self.min_curr} and {self.max_curr} A.')
+        else:
+            meas_type = 'volt'
+            if limit < self.min_volt and limit > self.max_volt:
+                raise ValueError(f'Outputting current, voltage compliance must
+                                 be between {self.min_volt} and {self.max_volt} V.')
+        # self.visa.write(':' + meas_type + ':prot ', str(limit))
+        self.visa.write(f':{meas_type}:prot {limit}')
 
     def reset_clamp(self):
         """
@@ -132,15 +141,15 @@ class Keithley2420(visa.resources.GPIBInstrument):
             meas_type = 'curr'
         else:
             meas_type = 'volt'
-        self.visa.write(':' + meas_type + ':prot def')
+        # self.visa.write(':' + meas_type + ':prot def')
+        self.visa.write(f':{meas_type}:prot def')
 
     def is_output_on(self):
         """
-        Returns whether the source is outputting or not.
+        Returns True if the sourcemeter is outputting and False otherwise.
 
         Returns:
-            True if sourcemeter is outputting
-            False otherwise
+            bool: If the sourcemeter is outputting or not.
         """
         state = self.visa.query_ascii_values(':output?')[0]
         if state == 1:
@@ -163,9 +172,8 @@ class Keithley2420(visa.resources.GPIBInstrument):
         Measures the voltage reading in Volts.
 
         Returns:
-            volt
-                type: float
-                desc: voltage reading in Volts
+            volt : float
+                Voltage reading in Volts.
         """
         volt = self.visa.query_ascii_values(':read?')[0]
         return volt
@@ -175,9 +183,8 @@ class Keithley2420(visa.resources.GPIBInstrument):
         Measures the current reading in Amperes.
 
         Returns:
-            curr
-                type: float
-                desc: current reading in Amperes
+            curr : float
+                Current reading in Amperes.
         """
         curr = self.visa.query_ascii_values(':read?')[1]
         return curr
@@ -187,9 +194,8 @@ class Keithley2420(visa.resources.GPIBInstrument):
         Measures the resistance in Ohms.
 
         Returns:
-            res
-                type: float
-                desc: resistance reading in Ohms
+            res : float
+                Resistance reading in Ohms.
         """
         res = self.visa.query_ascii_values(':read?')[2]
         return res

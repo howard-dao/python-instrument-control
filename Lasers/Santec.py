@@ -7,137 +7,143 @@ import pyvisa as visa
 import numpy as np
 
 class TSL710(visa.resources.GPIBInstrument):
-    def __init__(self, visa=None):
+    def __init__(self, visa):
         self.idn = visa.query('*IDN?')
         self.idn = self.idn.split(',')
         if self.idn[0] != 'Santec' and self.idn[1] != 'TSL-710':
             print('Device not recognized as Santec TSL-710.')
         self.visa = visa
 
+        self.min_wl = 1480
+        self.max_wl = 1640
+        self.min_spd = 0.5
+        self.max_spd = 100
+        self.min_del = 0
+        self.max_del = 999.9
+        self.min_pow_mW = 0.1
+        self.max_pow_mW = 10
+        self.min_pow_dBm = -20
+        self.max_pow_dBm = 10
+
     def get_wavelength(self):
         """
-        Returns the laser's output wavelength.
+        Returns the laser's output wavelength in nanometers.
 
         Returns:
-            lam
-                type: float
-                desc: laser output wavelength in nanometers
+            lam : float
+                Laser output wavelength in nanometers.
         """
         lam = self.visa.query_ascii_values(':wav?')[0]
         return lam
     
     def set_wavelength(self, lam:float):
         """
-        Sets the laser's output wavelength.
+        Sets the laser's output wavelength in nanometers.
 
         Parameters:
-            lam
-                type: float
-                desc: laser output wavelength in nanometers
+            lam : float
+                Laser output wavelength in nanometers.
         
         Raises:
-            AttributeError: <lam> is outside the acceptable range
+            ValueError: <lam> is out of range.
         """
-        if lam >= 1480 and lam <= 1640:
-            self.visa.write(':wav ', str(lam))
+        if lam >= self.min_wl and lam <= self.max_wl:
+            self.visa.write(f':wav {lam}')
         else:
-            raise AttributeError('Input parameter <lam> must be between 1480-1640.')
+            raise ValueError(f'Input parameter <lam> must be between 
+                             {self.min_wl} and {self.max_wl}.')
         
     def get_wav_sweep_start(self):
         """
-        Returns the start wavelength of the wavelength sweep.
+        Returns the start wavelength of the wavelength sweep, in nanometers.
 
         Returns:
-            lam
-                type: float
-                desc: start wavelength of laser sweep in nanometers
+            lam : float
+                Start wavelength of laser sweep in nanometers.
         """
         lam = self.visa.query_ascii_values(':wav:swe:start?')[0]
         return lam
     
     def set_wav_sweep_start(self, lam:float):
         """
-        Sets the start wavelength for wavelength sweep.
+        Sets the start wavelength for wavelength sweep, in nanometers.
 
         Parameters:
-            lam
-                type: float
-                desc: start wavelength of laser sweep in nanometers
+            lam : float
+                Start wavelength of laser sweep in nanometers.
         
         Raises:
-            AttributeError: <lam> is outside the acceptable range
+            ValueError: <lam> is out of range.
         """
-        if lam >= 1480 and lam <= 1640:
-            lam = str(lam)
-            self.visa.write(':wav:swe:start ', lam)
+        if lam >= self.min_wl and lam <= self.max_wl:
+            self.visa.write(f':wav:swe:start {lam}')
         else:
-            raise AttributeError('Input parameter <lam> must be between 1480-1640.')
+            raise ValueError(f'Input parameter <lam> must be between 
+                             {self.min_wl} and {self.max_wl}.')
 
     def get_wav_sweep_stop(self):
         """
+        Returns the stop wavelength of the wavelength sweep, in nanometers.
+
         Returns:
-            lam
-                type: float
-                desc: stop wavelength of laser sweep in nanometers
+            lam : float
+                Stop wavelength of laser sweep in nanometers.
         """
         lam = self.visa.query_ascii_values(':wav:swe:stop?')[0]
         return lam
     
     def set_wav_sweep_stop(self, lam:float):
         """
-        Sets the stop wavelength for wavelength sweep.
+        Sets the stop wavelength for wavelength sweep, in nanometers.
 
         Parameters:
-            lam
-                type: float
-                desc: stop wavelength of laser sweep in nanometers
+            lam : float
+                Stop wavelength of laser sweep in nanometers.
         
         Raises:
-            AttributeError: <lam> is outside the acceptable range
+            ValueError: <lam> is out of range.
         """
-        if lam >= 1480 and lam <= 1640:
-            lam = str(lam)
-            self.visa.write(':wav:swe:stop ', lam)
+        if lam >= self.min_wl and lam <= self.max_wl:
+            self.visa.write(f':wav:swe:stop {lam}')
         else:
-            raise AttributeError('Input parameter <lam> must be between 1480-1640.')
+            raise ValueError(f'Input parameter <lam> must be between 
+                             {self.min_wl} and {self.max_wl}.')
         
     def get_wave_sweep_speed(self):
         """
-        Returns the wavelength sweep speed.
+        Returns the wavelength sweep speed in nm/s.
 
         Returns
-            speed
-                type: float
-                desc: sweep speed in nm/sec
+            speed : float
+                Sweep speed in nm/sec.
         """
         speed = self.visa.query_ascii_values(':wav:swe:spe?')[0]
         return speed
     
     def set_wave_sweep_speed(self, speed:float):
         """
-        Sets the wavelength sweep speed.
+        Sets the wavelength sweep speed in nm/s.
 
         Parameters:
-            speed
-                type: float
-                desc: sweep speed in nm/sec
+            speed : float
+                Sweep speed in nm/sec.
         
         Raises:
-            AttributeError: <speed> is outside the acceptable range
+            ValueError: <speed> is out of range.
         """
-        if speed >= 0.5 and speed <= 100:
-            self.visa.write(':wav:swe:spe ', str(speed))
+        if speed >= self.min_spd and speed <= self.max_spd:
+            self.visa.write(f':wav:swe:spe {speed}')
         else:
-            raise AttributeError('Input parameter <speed> must be between 0.5-100.')
+            raise ValueError(f'Input parameter <speed> must be between 
+                             {self.min_spd} and {self.max_spd}.')
         
     def get_wave_sweep_delay(self):
         """
         Returns the wait time between wavelength sweeps.
 
         Returns:
-            delay
-                type: float
-                desc: wait time in seconds
+            delay : float
+                Wait time in seconds.
         """
         delay = self.visa.query_ascii_values(':wav:swe:del?')[0]
         return delay
@@ -147,26 +153,25 @@ class TSL710(visa.resources.GPIBInstrument):
         Sets the wait time between wavelength sweeps.
 
         Parameters:
-            delay
-                type: float
-                desc: wait time in seconds
+            delay : float
+                Wait time in seconds.
 
         Raises:
-            AttributeError: <delay> is outside of acceptable range
+            ValueError: <delay> is out of range.
         """
-        if delay >= 0 and delay <= 999.9:
-            self.visa.write(':wav:swe:del ', str(delay))
+        if delay >= self.min_del and delay <= self.max_del:
+            self.visa.write(f':wav:swe:del {delay}')
         else:
-            raise AttributeError('Input parameter <delay> must be between 0-999.9.')
+            raise ValueError(f'Input parameter <delay> must be between 
+                             {self.min_del} and {self.max_del}.')
         
     def get_wave_sweep_cycles(self):
         """
         Returns the number of wavelength sweep cycles.
 
         Returns:
-            cycles
-                type: int
-                desc: number of sweep cycles
+            cycles : int
+                Number of sweep cycles.
         """
         cycles = self.visa.query_ascii_values(':wav:swe:cycl?')[0]
         return cycles
@@ -176,17 +181,16 @@ class TSL710(visa.resources.GPIBInstrument):
         Sets the number of wavelength sweep cycles.
 
         Parameters:
-            cycles
-                type: int
-                desc: number of sweep cycles
+            cycles : int
+                Number of sweep cycles.
         
         Raises:
-            AttributeError: <cycles> is not an integer between 0-999.
+            ValueError: <cycles> is not an integer between 0-999.
         """
         if cycles in range(0, 1000):
-            self.visa.write(':wav:swe:cycl ', str(cycles))
+            self.visa.write(f':wav:swe:cycl {cycles}')
         else:
-            raise AttributeError('Input parameter <cycles> must be an integer between 0-999.')
+            raise ValueError('Input parameter <cycles> must be an integer between 0 to 999.')
         
     def get_wave_sweep_mode(self):
         """
@@ -198,9 +202,8 @@ class TSL710(visa.resources.GPIBInstrument):
         3: Continuous operation, two-way
 
         Returns:
-            mode
-                type: int
-                desc: 0, 1, 2, or 3
+            mode : int
+                Sweeping mode number.
         """
         mode = self.visa.query_ascii_values(':wav:swe:mod?')[0]
         return mode
@@ -215,31 +218,28 @@ class TSL710(visa.resources.GPIBInstrument):
         3: Continuous operation, two-way
 
         Parameters:
-            mode
-                type: int
-                desc:
+            mode : int
+                Sweeping mode number.
         
         Raises:
-            AttributeError: 
+            ValueError: <mode> is neither 0, 1, 2, nor 3.
         """
         if mode in range(0, 4):
-            self.visa.write(':wav:swe:mod ', str(mode))
+            self.visa.write(f':wav:swe:mod {mode}')
         else:
-            raise AttributeError('Input parameter <mode> must be 0, 1, 2, or 3.')
+            raise ValueError('Input parameter <mode> must be 0, 1, 2, or 3.')
         
     def get_power_unit(self, verbose=True):
         """
         Return the unit for output laser power.
 
         Parameters:
-            verbose
-                type: Boolean
-                desc: whether to return <unit> as an integer (False) or string (True)
+            verbose : bool, optional
+                Whether to return <unit> as an integer (False) or string (True).
 
         Returns:
-            unit
-                type: int or string
-                desc: either 'dBm' or 'mW'
+            unit : int or str
+                Either 'dBm' or 'mW'.
         """
         unit = self.visa.query_ascii_values(':pow:unit?')[0]
         if verbose:
@@ -255,33 +255,31 @@ class TSL710(visa.resources.GPIBInstrument):
         Sets the unit for output laser power.
 
         Parameters:
-            unit: string
-            desc: either 'dBm' or 'mW'
+            unit : str
+            Either 'dBm' or 'mW'.
         
         Raises:
-            AttributeError: <unit> is neither 'mW' nor 'dBm'
+            ValueError: <unit> is neither 'mW' nor 'dBm'.
         """
         if unit == 'dBm':
             unit = 0
         elif unit == 'mW':
             unit = 1
         else:
-            raise AttributeError('Input parameter <unit> must be either "mW" or "dBm".')
-        self.visa.write(':pow:unit ', str(unit))
+            raise ValueError('Input parameter <unit> must be either "mW" or "dBm".')
+        self.visa.write(f':pow:unit {unit}')
         
     def get_power(self, unit='mW'):
         """
         Returns the laser output power setting.
 
         Parameters:
-            unit
-                type: string
-                desc: either 'dBm' or 'mW' ('mW' by default)
+            unit : str, optional
+                Either 'dBm' or 'mW' ('mW' by default).
 
         Returns:
-            pow
-                type: float
-                desc: optical output power level
+            pow : float
+                Optical output power level.
         """
         self.set_power_unit(unit=unit)
         pow = self.visa.query_ascii_values(':pow?')[0]
@@ -289,64 +287,63 @@ class TSL710(visa.resources.GPIBInstrument):
     
     def set_power(self, pow:float, unit='mW'):
         """
-        Sets the laser output power. By default, it sets the power in mW, but can be set in dBm with the <unit> parameter.
+        Sets the laser output power. By default, it sets the power in mW,
+        but can be set in dBm with the <unit> parameter.
 
         Parameters:
-            pow
-                type: float
-                desc: optical output power level
-            unit
-                type: string
-                desc: either 'dBm' or 'mW' ('mW' by default)
+            pow : float
+                Optical output power level.
+            unit : str, optional
+                Either 'dBm' or 'mW' ('mW' by default).
         """
         self.set_power_unit(unit=unit)
-        self.visa.write(':pow ', str(pow))
+        if unit == 'mW':
+            if pow >= self.min_pow_mW and pow <= self.max_pow_mW:
+                pass
+            else:
+                raise ValueError(f'Input parameter <pow> must be between 
+                                 {self.min_pow_mW} and {self.max_pow_mW} mW.')
+        elif unit == 'dBm':
+            if pow >= self.min_pow_dBm and pow <= self.max_pow_dBm:
+                pass
+            else:
+                raise ValueError(f'Input parameter <pow> must be between 
+                                 {self.min_pow_dBm} and {self.max_pow_dBm} dBm.')
+        else:
+            raise ValueError('Input parameter <unit> must be "mW" or "dBm".')
+        self.visa.write(f':pow {pow}')
 
     def get_trig_out(self):
         """
         Returns the setting for trigger signal output timing.
 
         Returns:
-            0 for no trigger
-            1 for trigger at completion of a sweep
-            2 for trigger at start of a sweep
-            3 for trigger at each step in a sweep
+            'none' for no trigger
+            'stop' for trigger at completion of a sweep
+            'start' for trigger at start of a sweep
+            'step' for trigger at each step in a sweep
         """
+        settings = {0:'none', 1:'stop', 2:'start', 3:'step'}
         trig = self.visa.query_ascii_values(':trig:outp?')[0]
-        if trig == 0:
-            return 'none'
-        elif trig == 1:
-            return 'stop'
-        elif trig == 2:
-            return 'start'
-        elif trig == 3:
-            return 'step'
+        return settings[trig]
 
     def set_trig_out(self, trig:str):
         """
         Sets the trigger signal output timing.
 
         Parameters:
-            trig
-                type: string
-                desc: "none", "stop", "start", or "step"
+            trig : str
+                Either "none", "stop", "start", or "step".
         
         Raises:
-            AttributeError: <trig> was not any of the above settings
+            ValueError: <trig> was not any of the above settings.
         """
-        settings = ['none', 'stop', 'start', 'step']
-        if trig.lower() in settings:
-            if trig == 'none':
-                trig_num = 0
-            elif trig == 'stop':
-                trig_num = 1
-            elif trig == 'start':
-                trig_num = 2
-            else:
-                trig_num = 3
-            self.visa.write(':trig:outp ', str(trig_num))
+        settings = {'none':0, 'stop':1, 'start':2, 'step':3}
+        if trig.lower() in settings.keys():
+            trig_num = settings[trig.lower()]
+            self.visa.write(f':trig:outp {trig_num}')
         else:
-            raise AttributeError('Input parameter <trig> must be "none", "stop", "start", or "step".')
+            raise ValueError('Input parameter <trig> must be "none", "stop", "start", or "step".')
 
     def output_off(self):
         self.visa.write(':pow:stat 0')

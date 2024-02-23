@@ -1,3 +1,6 @@
 # ignore .ipynb files
 *.ipynb
 *.pyc
+
+# ignore .pdf files
+*.pdf
