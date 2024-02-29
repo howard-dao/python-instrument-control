@@ -10,7 +10,7 @@ class AQ6370D(visa.resources.GPIBInstrument):
     def __init__(self, visa):
         self.idn = visa.query('*IDN?')
         self.idn = self.idn.split(',')
-        if self.idn[0] != 'YOKOGAWA' and self.idn[1] != 'AQ6370D':
+        if self.idn[0] != 'YOKOGAWA' or self.idn[1] != 'AQ6370D':
             print('Device not recognized as Yokogawa AQ6370D.')
         self.visa = visa
 

@@ -10,7 +10,7 @@ class Keithley2420(visa.resources.GPIBInstrument):
     def __init__(self, visa):
         self.idn = visa.query('*IDN?')
         self.idn = self.idn.split(',')
-        if self.idn[0] != 'KEITHLEY INSTRUMENTS INC.' and self.idn[1] != 'MODEL 2420':
+        if self.idn[0] != 'KEITHLEY INSTRUMENTS INC.' or self.idn[1] != 'MODEL 2420':
             print('Device not recognized as Keithley 2420.')
         self.visa = visa
 

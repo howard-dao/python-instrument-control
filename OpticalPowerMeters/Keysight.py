@@ -9,7 +9,7 @@ class N7744A(visa.resources.GPIBInstrument):
     def __init__(self, visa):
         self.idn = visa.query('*IDN?')
         self.idn = self.idn.split(',')
-        if self.idn[0] != 'Keysight Technologies' and self.idn[1] != 'N7744A':
+        if self.idn[0] != 'Keysight Technologies' or self.idn[1] != 'N7744A':
             print('Device not recognized as Keysight Keysight N7744A.')
         self.visa = visa
 

@@ -10,7 +10,7 @@ class TSL710(visa.resources.GPIBInstrument):
     def __init__(self, visa):
         self.idn = visa.query('*IDN?')
         self.idn = self.idn.split(',')
-        if self.idn[0] != 'Santec' and self.idn[1] != 'TSL-710':
+        if self.idn[0] != 'Santec' or self.idn[1] != 'TSL-710':
             print('Device not recognized as Santec TSL-710.')
         self.visa = visa
 
