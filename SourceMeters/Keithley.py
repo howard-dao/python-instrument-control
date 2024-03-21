@@ -6,19 +6,18 @@ Author(s): Howard Dao
 import pyvisa as visa
 import numpy as np
 
-class Keithley2420(visa.resources.GPIBInstrument):
+class KeithleySourceMeter(visa.resources.GPIBInstrument):
     def __init__(self, visa):
         self.idn = visa.query('*IDN?')
         self.idn = self.idn.split(',')
-        if self.idn[0] != 'KEITHLEY INSTRUMENTS INC.' or self.idn[1] != 'MODEL 2420':
-            print('Device not recognized as Keithley 2420.')
+        if self.idn[0] != 'KEITHLEY INSTRUMENTS INC.':
+            print('Device not recognized as a Keithley device.')
         self.visa = visa
 
-        self.min_volt = -63
-        self.max_volt = 63
-
-        self.min_curr = -3.15
-        self.max_curr = 3.15
+        self.min_volt = None
+        self.max_volt = None
+        self.min_curr = None
+        self.max_curr = None
 
     def get_source_mode(self):
         """
@@ -44,11 +43,10 @@ class Keithley2420(visa.resources.GPIBInstrument):
             ValueError: <mode> is neither 'volt' nor 'curr'.
         """
         settings = ['volt', 'curr']
-        if mode.lower() in settings:
-            # self.visa.write(':source:func:mode ', mode)
-            self.visa.write(f':source:func:mode {mode}')
-        else:
-            raise ValueError('Input parameter <mode> must be either "volt" or "curr".')
+        if mode.lower() not in settings:
+            raise ValueError(
+                'Input parameter <mode> must be either "volt" or "curr".')
+        self.visa.write(f':source:func:mode {mode}')
         
     def set_volt(self, volt:float):
         """
@@ -61,12 +59,10 @@ class Keithley2420(visa.resources.GPIBInstrument):
         Raises:
             ValueError: <volt> is out of range.
         """
-        if volt >= self.min_volt and volt <= self.max_volt:
-            # self.visa.write(':source:volt ', str(volt))
-            self.visa.write(f':source:volt {volt}')
-        else:
-            raise ValueError(f'Input parameter <volt> must be between 
-                             {self.min_volt} and {self.max_volt}.')
+        if volt < self.min_volt or volt > self.max_volt:
+            raise ValueError(
+                f'Input parameter <volt> must be between {self.min_volt} and {self.max_volt}.')
+        self.visa.write(f':source:volt {volt}')
         
     def set_curr(self, curr:float):
         """
@@ -79,12 +75,10 @@ class Keithley2420(visa.resources.GPIBInstrument):
         Raises:
             ValueError: <curr> is out of range.
         """
-        if curr >= self.min_curr and curr <= self.max_curr:
-            # self.visa.write(':source:volt ', str(curr))
-            self.visa.write(f':source:curr {curr}')
-        else:
-            raise ValueError(f'Input parameter <curr> must be between 
-                             {self.min_curr} and {self.max_curr}.')
+        if curr < self.min_curr or curr > self.max_curr:
+            raise ValueError(
+                f'Input parameter <curr> must be between {self.min_curr} and {self.max_curr}.')
+        self.visa.write(f':source:curr {curr}')
     
     def get_clamp_limit(self):
         """
@@ -99,7 +93,6 @@ class Keithley2420(visa.resources.GPIBInstrument):
             meas_type = 'curr'
         else:
             meas_type = 'volt'
-        # limit = self.visa.query_ascii_values(':' + meas_type + ':prot:level?')[0]
         limit = self.visa.query_ascii_values(f':{meas_type}:prot:level?')[0]
         return limit
     
@@ -112,8 +105,7 @@ class Keithley2420(visa.resources.GPIBInstrument):
 
         Parameters:
             limit : float
-                Compliance limit. If the sourcemeter is set to outputting voltage, this will be a
-                current limit. If set to outputting current, it will be a voltage limit.
+                Compliance limit. If the sourcemeter is set to outputting voltage, this will be a current limit. If set to outputting current, it will be a voltage limit.
 
         Raises:
             ValueError: <limit> is out of range.
@@ -122,14 +114,13 @@ class Keithley2420(visa.resources.GPIBInstrument):
         if mode == 'VOLT':
             meas_type = 'curr'
             if limit < self.min_curr and limit > self.max_curr:
-                raise ValueError(f'Outputting voltage, current compliance must
-                                 be between {self.min_curr} and {self.max_curr} A.')
+                raise ValueError(
+                    f'Outputting voltage, current compliance must be between {self.min_curr} and {self.max_curr} A.')
         else:
             meas_type = 'volt'
             if limit < self.min_volt and limit > self.max_volt:
-                raise ValueError(f'Outputting current, voltage compliance must
-                                 be between {self.min_volt} and {self.max_volt} V.')
-        # self.visa.write(':' + meas_type + ':prot ', str(limit))
+                raise ValueError(
+                    f'Outputting current, voltage compliance must be between {self.min_volt} and {self.max_volt} V.')
         self.visa.write(f':{meas_type}:prot {limit}')
 
     def reset_clamp(self):
@@ -141,15 +132,11 @@ class Keithley2420(visa.resources.GPIBInstrument):
             meas_type = 'curr'
         else:
             meas_type = 'volt'
-        # self.visa.write(':' + meas_type + ':prot def')
         self.visa.write(f':{meas_type}:prot def')
 
     def is_output_on(self):
         """
         Returns True if the sourcemeter is outputting and False otherwise.
-
-        Returns:
-            bool: If the sourcemeter is outputting or not.
         """
         state = self.visa.query_ascii_values(':output?')[0]
         if state == 1:
@@ -199,3 +186,15 @@ class Keithley2420(visa.resources.GPIBInstrument):
         """
         res = self.visa.query_ascii_values(':read?')[2]
         return res
+    
+class Keithley2420(KeithleySourceMeter):
+    def __init__(self, visa):
+        super().__init__(visa)
+        if self.idn[1] != 'MODEL 2420':
+            print(f'{self.idn[0]} device not recognized as Model 2420.')
+        self.visa = visa
+
+        self.min_volt = -63
+        self.max_volt = 63
+        self.min_curr = -3.15
+        self.max_curr = 3.15

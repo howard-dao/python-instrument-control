@@ -5,12 +5,12 @@ Author(s): Howard Dao
 
 import pyvisa as visa
 
-class TSL(visa.resources.GPIBInstrument):
+class SantecLaser(visa.resources.GPIBInstrument):
     def __init__(self, visa):
         self.idn = visa.query('*IDN?')
         self.idn = self.idn.split(',')
         if self.idn[0] != 'SANTEC':
-            print('Device not recognized as a Santec laser.')
+            print('Device not recognized as a Santec device.')
         self.visa = visa
 
         self.min_wl = None
@@ -175,7 +175,7 @@ class TSL(visa.resources.GPIBInstrument):
     def output_on(self):
         self.visa.write(':pow:stat 1')
 
-class TSL710(TSL):
+class TSL710(SantecLaser):
     def __init__(self, visa):
         super().__init__(visa)
         if self.idn[1] != 'TSL-710':
@@ -193,11 +193,11 @@ class TSL710(TSL):
         self.min_pow_dBm = -20
         self.max_pow_dBm = 10
 
-class TSL770(TSL):
+class TSL770(SantecLaser):
     def __init__(self, visa):
         super().__init__(visa)
         if self.idn[1] != 'TSL-770':
-            print(f'{self.idn[0]} laser not recognized as TSL-770')
+            print(f'{self.idn[0]} device not recognized as TSL-770')
         self.visa = visa
 
         self.min_wl = 1480
