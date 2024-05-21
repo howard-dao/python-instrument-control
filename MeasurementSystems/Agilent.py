@@ -297,7 +297,7 @@ class AgilentLaser(AgilentMainframe):
 
     def get_expected_ntriggers(self):
         """
-        Returns the number of expected triggers.
+        Returns the number of expected triggers. The output of this function is necessary for telling a power meter how many times it needs to measure.
         """
         exp = self.visa.query_ascii_values(f':sour{self.slot}:wav:swe:exp?')[0]
         return exp
