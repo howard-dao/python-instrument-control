@@ -4,3 +4,6 @@
 
 # ignore .pdf files
 *.pdf
+
+# ignore .npy files
+*.npy
