@@ -19,154 +19,82 @@ class SantecLaser(visa.resources.GPIBInstrument):
         self.max_spd = None
         self.max_del = None
 
-        self.pow_unit = self.get_power_unit()
         self.min_pow_mW = None
         self.max_pow_mW = None
         self.min_pow_dBm = None
         self.max_pow_dBm = None
 
-    def get_wavelength(self):
-        """
-        Returns the laser's output wavelength.
-        """
-        lam = self.visa.query_ascii_values(':wav?')[0]
-        return lam
-    
-    def set_wavelength(self, lam:float):
-        """
-        Sets the laser's output wavelength.
-
-        Parameters:
-            lam : float
-                Laser output wavelength.
-        
-        Raises:
-            ValueError: <lam> is outside of range.
-        """
+    @property
+    def wavelength(self):
+        return self.visa.query_ascii_values(':wav?')[0]
+    @property.setter
+    def wavelength(self, lam:float):
         if lam < self.min_wl or lam > self.max_wl:
             raise ValueError(
-                f'Input parameter <lam> must be between {self.min_wl} to {self.max_wl}.')
+                f'Input parameter <lam> must be between {self.min_wl} to {self.max_wl}. It was given {lam}.')
         self.visa.write(f':wav {lam}')
-        
-    def get_wave_sweep_start(self):
-        """
-        Returns the start wavelength of the wavelength sweep.
-        """
-        lam = self.visa.query_ascii_values(':wav:swe:start?')[0]
-        return lam
     
-    def set_wave_sweep_start(self, lam:float):
-        """
-        Sets the start wavelength for wavelength sweep.
-
-        Parameters:
-            lam : float
-                Laser sweep start wavelength.
-        
-        Raises:
-            ValueError: <lam> is out of range.
-        """
+    @property
+    def wave_sweep_start(self):
+        return self.visa.query_ascii_values(':wav:swe:start?')[0]
+    @property.setter
+    def wave_sweep_start(self, lam:float):
         if lam < self.min_wl or lam > self.max_wl:
             raise ValueError(
-                f'Input parameter <lam> must be between {self.min_wl} to {self.max_wl}.')
+                f'Input parameter <lam> must be between {self.min_wl} to {self.max_wl}. It was given {lam}.')
         self.visa.write(f':wav:swe:start {lam}')
 
-    def get_wave_sweep_stop(self):
-        """
-        Returns the stop wavelength of the wavelength sweep.
-        """
-        lam = self.visa.query_ascii_values(':wav:swe:stop?')[0]
-        return lam
-    
-    def set_wave_sweep_stop(self, lam:float):
-        """
-        Sets the stop wavelength for wavelength sweep.
-
-        Parameters:
-            lam : float
-                Laser sweep stop wavelength.
-        
-        Raises:
-            ValueError: <lam> is out of range.
-        """
+    @property
+    def wave_sweep_stop(self):
+        return self.visa.query_ascii_values(':wav:swe:stop?')[0]
+    @property.setter
+    def wave_sweep_stop(self, lam:float):
         if lam < self.min_wl or lam > self.max_wl:
             raise ValueError(
-                f'Input parameter <lam> must be between {self.min_wl} to {self.max_wl}.')
+                f'Input parameter <lam> must be between {self.min_wl} to {self.max_wl}. It was given {lam}.')
         self.visa.write(f':wav:swe:stop {lam}')
 
-    def get_wave_sweep_speed(self):
-        """
-        Returns the wavelength sweep speed in nm/s.
-        """
-        speed = self.visa.query_ascii_values(':wav:swe:spe?')[0]
-        return speed
-    
-    def set_wave_sweep_speed(self, speed:float):
-        """
-        Sets the wavelength sweep speed.
-
-        Parameters:
-            speed : float
-                Sweep speed.
-        
-        Raises:
-            ValueError: <speed> is out of range.
-        """
+    @property
+    def wave_sweep_speed(self):
+        return self.visa.query_ascii_values(':wav:swe:spe?')[0]
+    @property.setter
+    def wave_sweep_speed(self, speed:float):
         if speed < self.min_spd or speed > self.max_spd:
             raise ValueError(
-                f'Input parameter <speed> must be between {self.min_spd} to {self.max_spd}.')
+                f'Input parameter <speed> must be between {self.min_spd} to {self.max_spd}. It was given {speed}.')
         self.visa.write(f':wav:swe:spe {speed}')
-        
-    def start_sweep(self):
-        """
-        Starts a wavelength sweep.
-        """
-        self.visa.write(':wav:swe 1')
-        
-    def get_power_unit(self):
+    
+    @property
+    def power_unit(self):
         unit = self.visa.query_ascii_values(':pow:unit?')[0]
         if unit == 0:
             return 'dBm'
         else:
             return 'mW'
-        
-    def set_power_unit(self, unit:str):
+    @property.setter
+    def power_unit(self, unit:str):
         if unit == 'dBm':
             unit_num = 0
         elif unit == 'mW':
             unit_num = 1
         else:
-            raise ValueError(
-                'Input parameter <unit> must be either "mW" or "dBm".')
+            raise ValueError(f'Input parameter <unit> must be either "mW" or "dBm". It was given "{unit}".')
         self.visa.write(f':pow:unit {unit_num}')
         self.pow_unit = unit
-        
-    def get_power(self):
-        """
-        Returns the laser output power.
-        """
-        pow = self.visa.query_ascii_values(':pow?')[0]
-        return pow
-    
-    def set_power(self, pow:float):
-        """
-        Sets the laser output power.
 
-        Parameters:
-            pow : float
-                Laser output power in either mW or dBm.
-        
-        Raises:
-            ValueError: <pow> is outside of range.
-        """
+    @property
+    def power(self):
+        return self.visa.query_ascii_values(':pow?')[0]
+    @property.setter
+    def power(self, pow:float):
         if self.pow_unit == 'mW':
             if pow < self.min_pow_mW or pow > self.max_pow_mW:
                 raise ValueError(
-                    f'Input parameter <pow> must be between {self.min_pow_mW} and {self.max_pow_mW} mW.')
+                    f'Input parameter <pow> must be between {self.min_pow_mW} and {self.max_pow_mW} mW. It was given {pow}.')
         else:
             if pow < self.min_pow_dBm or pow > self.max_pow_dBm:
                 raise ValueError(
-                    f'Input parameter <pow> must be between {self.min_pow_dBm} and {self.max_pow_dBm} dBm.')
+                    f'Input parameter <pow> must be between {self.min_pow_dBm} and {self.max_pow_dBm} dBm. It was given {pow}.')
         self.visa.write(f':pow {pow}')
         
     def output_off(self):
@@ -174,6 +102,12 @@ class SantecLaser(visa.resources.GPIBInstrument):
 
     def output_on(self):
         self.visa.write(':pow:stat 1')
+
+    def start_sweep(self):
+        """
+        Starts a wavelength sweep.
+        """
+        self.visa.write(':wav:swe 1')
 
 class TSL710(SantecLaser):
     def __init__(self, visa):
